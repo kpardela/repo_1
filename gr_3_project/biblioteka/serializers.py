@@ -133,6 +133,12 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class StanowiskoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stanowisko
+        fields = '__all__'
+
+
 class OsobaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Osoba
@@ -149,11 +155,4 @@ class OsobaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Nazwisko musi zaczynać się wielka literą!"
             )
-     
-
-class StanowiskoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Stanowisko
-        fields = '__all__'
-
         
