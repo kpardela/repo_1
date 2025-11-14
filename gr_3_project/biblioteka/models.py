@@ -86,4 +86,3 @@ class Osoba(models.Model):
 class Stanowisko(models.Model):
     nazwa = models.CharField(max_length = 70, blank = False, null = False)
     opis = models.TextField(blank = True, null = True)
-
