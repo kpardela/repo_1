@@ -54,7 +54,7 @@
 #         return instance
 
 from dataclasses import fields
-from gr_3_project.biblioteka.models import Author, Book, Genre, Osoba
+from gr_3_project.biblioteka.models import Author, Book, Genre, Osoba, Stanowisko
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -138,12 +138,22 @@ class OsobaSerializer(serializers.ModelSerializer):
         model = Osoba
         fields = '__all__'
 
-    def validate(self, value):
+    def validate_imie(self, value):
         if not value.istitle():
             raise serializers.ValidationError(
-                "Imie i Nazwisko musi zaczynać się wielka literą!"
+                "Imie musi zaczynać się wielka literą!"
             )
         return value
+    def validate_nazwisko(self, value):
+        if not value.istitle():
+            raise serializers.ValidationError(
+                "Nazwisko musi zaczynać się wielka literą!"
+            )
+     
 
+class StanowiskoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stanowisko
+        fields = '__all__'
 
         
