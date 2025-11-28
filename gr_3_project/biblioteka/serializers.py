@@ -54,7 +54,7 @@
 #         return instance
 
 from dataclasses import fields
-from gr_3_project.biblioteka.models import Author, Book, Genre, Osoba, Stanowisko
+from .models import Author, Book, Genre, Osoba, Stanowisko
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
