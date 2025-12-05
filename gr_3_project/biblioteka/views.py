@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from .models import Book, Osoba, Stanowisko
 from .serializers import BookSerializer, OsobaSerializer, StanowiskoSerializer
 from django.http import Http404
+from .forms import OsobaForm
 
 # określamy dostępne metody żądania dla tego endpointu
 @api_view(['GET', "POST"])
@@ -227,22 +228,18 @@ def osoba_list_html(request):
 
 def osoba_detail_html(request, id):
     # pobieramy konkretny obiekt Osoba
-    osoba = Osoba.objects.get(id=id)
-
-    return render(request,
-                  "biblioteka/osoba/detail.html",
-                  {'osoba': osoba})
-
-def osoba_detail_html(request, id):
-    # pobieramy konkretny obiekt Osoba
     try:
         osoba = Osoba.objects.get(id=id)
     except Osoba.DoesNotExist:
         raise Http404("Obiekt Osoba o podanym id nie istnieje")
 
-    return render(request,
-                  "biblioteka/osoba/detail.html",
-                  {'osoba': osoba})
+    if request.method == "GET":
+        return render(request,
+                    "biblioteka/osoba/detail.html",
+                    {'osoba': osoba})
+    if request.method == "POST":
+        osoba.delete()
+        return redirect('osoba-list') 
 
 def osoba_create_html(request):
     stanowiska = Stanowisko.objects.all()  # pobieramy listę stanowisk z bazy
@@ -274,3 +271,16 @@ def osoba_create_html(request):
         else:
             error = "Wszystkie pola są wymagane."
             return render(request, "biblioteka/osoba/create.html", {'error': error, 'stanowiska': stanowiska})
+
+def osoba_create_django_form(request):
+    if request.method == "POST":
+        form = OsobaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('osoba-list')  
+    else:
+        form = OsobaForm()
+
+    return render(request,
+                  "biblioteka/osoba/create_django.html",
+                  {'form': form})
