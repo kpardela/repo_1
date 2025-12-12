@@ -1,6 +1,6 @@
 
 from tokenize import Token
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.shortcuts import redirect, render, redirect
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -14,6 +14,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth.decorators import login_required
+
 from rest_framework.authtoken.models import Token
 from functools import wraps
 
@@ -357,3 +358,7 @@ def drf_token_login(request):
         else:
             return render(request, 'biblioteka/login.html', {'error': 'Nieprawidłowe dane'})
     return render(request, 'biblioteka/login.html')
+
+def drf_token_logout(request):
+    request.session.flush()
+    return redirect('drf-token-login')
