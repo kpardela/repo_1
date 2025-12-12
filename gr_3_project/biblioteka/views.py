@@ -1,4 +1,6 @@
 
+from tokenize import Token
+from django.contrib.auth import login, logout
 from django.shortcuts import redirect, render, redirect
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -7,7 +9,27 @@ from .models import Book, Osoba, Stanowisko
 from .serializers import BookSerializer, OsobaSerializer, StanowiskoSerializer
 from django.http import Http404
 from .forms import OsobaForm
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication, authenticate
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from django.contrib.auth.decorators import login_required
+from rest_framework.authtoken.models import Token
+from functools import wraps
 
+
+def drf_token_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        token_key = request.session.get('token')
+        if not token_key:
+            return redirect('drf-token-login')
+        try:
+            Token.objects.get(key=token_key)
+        except Token.DoesNotExist:
+            return redirect('drf-token-login')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 # określamy dostępne metody żądania dla tego endpointu
 @api_view(['GET', "POST"])
 def book_list(request):
@@ -28,7 +50,9 @@ def book_list(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def book_detail(request, pk):
 
     """
@@ -48,7 +72,23 @@ def book_detail(request, pk):
         serializer = BookSerializer(book)
         return Response(serializer.data)
 
-    elif request.method == 'PUT':
+
+@api_view(['PUT', 'DELETE'])
+@authentication_classes([SessionAuthentication, BasicAuthentication])
+@permission_classes([IsAuthenticated])
+def book_update_delete(request, pk):
+
+    """
+    :param request: obiekt DRF Request
+    :param pk: id obiektu Book
+    :return: Response (with status and/or object/s data)
+    """
+    try:
+        book = Book.objects.get(pk=pk)
+    except Book.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
         serializer = BookSerializer(book, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -218,6 +258,8 @@ def welcome_view(request):
     osoby = Osoba.objects.all()
     return HttpResponse(osoby)
 
+#@login_required(login_url='user-login')
+@drf_token_required
 def osoba_list_html(request):
     # pobieramy wszystkie obiekty Osoba z bazy poprzez QuerySet
     osoby = Osoba.objects.all()
@@ -284,3 +326,34 @@ def osoba_create_django_form(request):
     return render(request,
                   "biblioteka/osoba/create_django.html",
                   {'form': form})
+
+def user_login(request):
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('osoba-list')
+        else:
+            return render(request, 'biblioteka/login.html', {'error': 'Nieprawidłowe dane'})
+    return render(request, 'biblioteka/login.html')
+
+def user_logout(request):
+    logout(request)
+    return redirect('user-login')
+
+def drf_token_login(request):
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            token, created = Token.objects.get_or_create(user=user)
+            # zapisujemy token w sesji
+            request.session['token'] = token.key
+            request.session['user_id'] = user.id
+            return redirect('osoba-list')
+        else:
+            return render(request, 'biblioteka/login.html', {'error': 'Nieprawidłowe dane'})
+    return render(request, 'biblioteka/login.html')
